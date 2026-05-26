@@ -33,7 +33,8 @@ CONFIG.update({
     "HRES_ONLY":    False,     # True = only constrain H_res, fix H_pre and H_post
 
     # Gradient clipping — CRITICAL: stabilizes SAA lambda parameters
-    "CLIP_GRAD":    1.0,
+    "CLIP_GRAD":    5.0,
+    
 })
 
 CONFIG["CHECKPOINT_DIR"] = f"{CONFIG['SAVES_ROOT']}/{CONFIG['MODEL']}"

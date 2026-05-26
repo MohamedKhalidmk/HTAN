@@ -30,13 +30,13 @@ ALL_MODELS = [
 
 
 def get_model(name):
-    from models.transattunet.TransAttUnet import UNet_Attention_Transformer_Multiscale
+    from models.transattunet.TransAttUnet import TransAttUNet_R
     from models.htan.htan import HTAN_MODELS
     from models.baselines.unet import UNet
     from models.baselines.doubleunet import DoubleUNet
 
     registry = {
-        "transattunet": lambda: UNet_Attention_Transformer_Multiscale(n_channels=3, n_classes=1),
+        "transattunet": lambda: TransAttUNet_R(),
         "unet":         lambda: UNet(n_channels=3, n_classes=1),
         "doubleunet":   lambda: DoubleUNet(n_channels=3, n_classes=1),
         **HTAN_MODELS,
