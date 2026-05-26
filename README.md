@@ -6,6 +6,27 @@ HTAN integrates Manifold-Constrained Hyper-Connections (mHC) into the TransAttUN
 
 ---
 
+## For MediLink Team
+
+You only need 2 files: `inference.py` and `htan_tool.py`
+
+1. Clone the repo
+2. Install dependencies:
+```bash
+pip install torch torchvision scipy opencv-python langchain-core langgraph pydantic
+```
+3. Get `best_model.pth` from MK and place it at:
+```
+saves/htan_1_n2/best_model.pth
+```
+4. In your LangGraph agent add:
+```python
+from htan_tool import htan_segmentation_tool
+tools = [..., htan_segmentation_tool]
+```
+
+---
+
 ## Results (ISIC-2018)
 
 | Model | Dice | IoU | ACC | REC | PRE |
@@ -35,32 +56,14 @@ Input → Encoder → [mHC Bottleneck] → Decoder → Output Mask
 
 ## Setup
 
-### Requirements
-- Python 3.10+
-- CUDA GPU (tested on NVIDIA A10G)
-- 24GB+ VRAM recommended for training
-
-### Installation
-
 ```bash
 git clone https://github.com/MohamedKhalidmk/HTAN.git
 cd HTAN
-bash setup.sh
-```
-
-### Manual setup (if setup.sh fails)
-
-```bash
 pip install torch torchvision Pillow requests numpy matplotlib scipy opencv-python
 pip install langchain-core langgraph pydantic
-
 touch configs/__init__.py datasets/__init__.py models/__init__.py \
       models/transattunet/__init__.py models/htan/__init__.py \
       models/baselines/__init__.py utils/__init__.py
-
-mkdir -p /opt/dlami/nvme/HTAN/saves/htan_1_n2
-mkdir -p /opt/dlami/nvme/HTAN/results/{isic,lung,covid,bowl,glas}
-mkdir -p /opt/dlami/nvme/HTAN/data/isic/{train_images,train_masks}
 ```
 
 ---
@@ -123,8 +126,6 @@ The tool returns structured segmentation data that Claude uses to generate clini
 
 ## Training
 
-### Train a model
-
 ```bash
 # TransAttUNet baseline
 python3 train.py --model transattunet --dataset isic
@@ -142,9 +143,8 @@ python3 train.py --model doubleunet --dataset isic
 
 Training resumes automatically from the last checkpoint if interrupted.
 
-### Evaluate
-
 ```bash
+# Evaluate
 python3 evaluate.py --model htan_1_n2 --dataset isic
 python3 evaluate.py --model all       --dataset isic
 ```
@@ -173,8 +173,6 @@ HTAN/
 
 ## Contributing
 
-This repo uses protected branch rules. To contribute:
-
 1. Create a new branch: `git checkout -b your-feature`
 2. Make changes and push: `git push origin your-feature`
 3. Open a Pull Request for review
@@ -184,8 +182,6 @@ Direct pushes to `main` are not allowed.
 ---
 
 ## Citation
-
-If you use this work, please cite:
 
 ```
 @article{htan2025,
