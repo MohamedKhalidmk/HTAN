@@ -1,35 +1,24 @@
 import os
 import torch
-import torch.nn as nn
 import torchvision.transforms.functional as TF
-
 from utils.metrics import segmentation_metrics
 
 
 # ---------------------------------------------------------------------------
 # TTA — Test Time Augmentation (original + hflip + vflip)
 # ---------------------------------------------------------------------------
-def predict_with_tta(model, imgs):
-    pred_orig = model(imgs)
-    pred_h    = TF.hflip(model(TF.hflip(imgs)))
-    pred_v    = TF.vflip(model(TF.vflip(imgs)))
+def predict_with_tta(model, imgs, epoch=None):
+    """Pass epoch for SAA warmup lambda during validation."""
+    pred_orig = model(imgs, epoch=epoch)
+    pred_h    = TF.hflip(model(TF.hflip(imgs), epoch=epoch))
+    pred_v    = TF.vflip(model(TF.vflip(imgs), epoch=epoch))
     return (pred_orig + pred_h + pred_v) / 3.0
 
 
 # ---------------------------------------------------------------------------
-# SAA epoch update
+# One training epoch — fp32, passes epoch to model
 # ---------------------------------------------------------------------------
-def update_saa_epoch(model, epoch):
-    if hasattr(model, 'saa_x5'):
-        model.saa_x5.current_epoch = epoch
-    if hasattr(model, 'saa_x4'):
-        model.saa_x4.current_epoch = epoch
-
-
-# ---------------------------------------------------------------------------
-# One training epoch — fp32, no AMP
-# ---------------------------------------------------------------------------
-def train_one_epoch(loader, model, optimizer, loss_fn, config):
+def train_one_epoch(loader, model, optimizer, loss_fn, config, epoch):
     model.train()
     total_loss = 0.0
     device     = config["DEVICE"]
@@ -38,13 +27,9 @@ def train_one_epoch(loader, model, optimizer, loss_fn, config):
         imgs, masks = imgs.to(device), masks.to(device)
         optimizer.zero_grad()
 
-        preds = model(imgs)
+        preds = model(imgs, epoch=epoch)
         loss  = loss_fn(preds, masks)
         loss.backward()
-
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), max_norm=config.get("CLIP_GRAD", 1.0)
-        )
         optimizer.step()
         total_loss += loss.item()
 
@@ -52,9 +37,9 @@ def train_one_epoch(loader, model, optimizer, loss_fn, config):
 
 
 # ---------------------------------------------------------------------------
-# Validation with TTA — fp32
+# Validation with TTA — fp32, passes epoch for SAA warmup
 # ---------------------------------------------------------------------------
-def validate(loader, model, loss_fn, config):
+def validate(loader, model, loss_fn, config, epoch):
     model.eval()
     total_loss  = 0.0
     metrics_sum = {"dice": 0.0, "iou": 0.0, "acc": 0.0, "rec": 0.0, "pre": 0.0}
@@ -63,10 +48,8 @@ def validate(loader, model, loss_fn, config):
     with torch.no_grad():
         for imgs, masks in loader:
             imgs, masks = imgs.to(device), masks.to(device)
-
-            preds = predict_with_tta(model, imgs)
-            loss  = loss_fn(preds, masks)
-
+            preds       = predict_with_tta(model, imgs, epoch=epoch)
+            loss        = loss_fn(preds, masks)
             total_loss += loss.item()
 
             batch_metrics = segmentation_metrics(preds, masks)
@@ -118,13 +101,12 @@ def train_model(model, train_loader, val_loader, optimizer,
     for epoch in range(start_epoch, epochs + 1):
         current_lr = optimizer.param_groups[0]["lr"]
 
-        update_saa_epoch(model, epoch)
-
         train_loss = train_one_epoch(
-            train_loader, model, optimizer, loss_fn, config
+            train_loader, model, optimizer, loss_fn, config, epoch
         )
-
-        val_loss, val_metrics = validate(val_loader, model, loss_fn, config)
+        val_loss, val_metrics = validate(
+            val_loader, model, loss_fn, config, epoch
+        )
 
         if scheduler:
             scheduler.step()

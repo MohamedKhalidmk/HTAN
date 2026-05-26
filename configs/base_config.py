@@ -12,7 +12,7 @@ BASE = {
     "IMG_SIZE":    256,
     "BATCH_SIZE":  4,
     "EPOCHS":      100,
-    "SEED":        42,
+    "SEED":        123,
     "NUM_WORKERS": 4,
 
 
