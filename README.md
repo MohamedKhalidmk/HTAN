@@ -8,7 +8,7 @@ HTAN integrates Manifold-Constrained Hyper-Connections (mHC) into the TransAttUN
 
 ## For MediLink Team
 
-> You only need `inference.py` and `htan_tool.py` from this repo.
+> You only need `inference.py` and `LangGraph_tool.py` from this repo.
 
 **1. Clone and install**
 ```bash
@@ -55,7 +55,7 @@ Severity estimate:  moderate
 
 **5. Add to your LangGraph agent**
 ```python
-from htan_tool import htan_segmentation_tool
+from LangGraph_tool import htan_segmentation_tool
 
 tools = [...your_existing_tools..., htan_segmentation_tool]
 ```
@@ -144,7 +144,7 @@ HTAN/
 ├── utils/                # Metrics, losses, trainer
 ├── notebooks/            # Results and visualizations
 ├── inference.py          # Standalone inference
-├── htan_tool.py          # LangGraph tool
+├── LangGraph_tool.py          # LangGraph tool
 ├── train.py              # Training CLI
 └── evaluate.py           # Evaluation CLI
 ```
