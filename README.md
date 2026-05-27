@@ -166,8 +166,8 @@ git push origin your-feature
 ```bibtex
 @article{htan2025,
   title   = {HTAN: Hyper TransAttUNet with Manifold-Constrained Hyper-Connections for Medical Image Segmentation},
-  author  = {Mohamed Khalid},
-  year    = {2025}
+  author  = {Mohamed Khaled},
+  year    = {2026}
 }
 ```
 
