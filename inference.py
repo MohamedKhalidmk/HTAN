@@ -24,7 +24,7 @@ from scipy import ndimage
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-DEFAULT_CHECKPOINT = "/opt/dlami/nvme/HTAN/saves/htan_1_n2/best_model.pth"
+DEFAULT_CHECKPOINT = "saves/htan_2_n2/best_model.pth"
 IMG_SIZE           = 256
 DEVICE             = "cuda" if torch.cuda.is_available() else "cpu"
 

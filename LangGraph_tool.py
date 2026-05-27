@@ -29,7 +29,7 @@ class HTANSegmentationInput(BaseModel):
                     "Use DICOM metadata if available. Default 0.1mm."
     )
     checkpoint_path: Optional[str] = Field(
-        default="/opt/dlami/nvme/HTAN/saves/htan_1_n2/best_model.pth",
+        default="saves/htan_2_n2/best_model.pth",
         description="Path to HTAN model weights. Use default unless testing a different variant."
     )
 
@@ -53,7 +53,7 @@ def _get_model(checkpoint_path):
 def htan_segmentation_tool(
     image_path: str,
     pixel_spacing_mm: float = 0.1,
-    checkpoint_path: str = "/opt/dlami/nvme/HTAN/saves/htan_1_n2/best_model.pth"
+    checkpoint_path: str = "saves/htan_2_n2/best_model.pth"
 ) -> str:
     """
     Analyzes a medical image using the HTAN (Hyper TransAttUNet) deep learning model
