@@ -24,7 +24,7 @@ class ConvBlock(nn.Module):
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
         )
-    def forward(self, x): return self.block(x)
+    def forward(self, x, **kwargs): return self.block(x)
 
 
 class SqueezeExcite(nn.Module):
@@ -38,7 +38,7 @@ class SqueezeExcite(nn.Module):
             nn.Linear(channels // ratio, channels),
             nn.Sigmoid(),
         )
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         return x * self.se(x).view(x.shape[0], x.shape[1], 1, 1)
 
 
@@ -63,7 +63,7 @@ class ASPP(nn.Module):
             nn.Conv2d(out_ch * 5, out_ch, 1), nn.BatchNorm2d(out_ch), nn.ReLU()
         )
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         feats = [c(x) for c in self.convs]
         feats.append(F.interpolate(self.pool(x), size=x.shape[2:],
                                    mode='bilinear', align_corners=True))
@@ -153,7 +153,7 @@ class DoubleUNet(nn.Module):
             b = F.interpolate(b, size=a.shape[-2:], mode='bilinear', align_corners=True)
         return torch.cat([a, b], dim=1)
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # ---- Network 1: VGG16 encoder ----
         s1 = self.vgg_block1(x)
         s2 = self.vgg_block2(self.pool1(s1))
