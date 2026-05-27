@@ -153,7 +153,7 @@ class DoubleUNet(nn.Module):
             b = F.interpolate(b, size=a.shape[-2:], mode='bilinear', align_corners=True)
         return torch.cat([a, b], dim=1)
 
-    def forward(self, x):
+    def forward(self, x, **kwargs):
         # ---- Network 1: VGG16 encoder ----
         s1 = self.vgg_block1(x)
         s2 = self.vgg_block2(self.pool1(s1))
