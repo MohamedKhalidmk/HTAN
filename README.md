@@ -2,94 +2,65 @@
 
 **Hyper TransAttUNet: Manifold-Constrained Hyper-Connections for Medical Image Segmentation**
 
-HTAN integrates Manifold-Constrained Hyper-Connections (mHC) into the TransAttUNet bottleneck, achieving **90.22% Dice** on ISIC-2018 skin lesion segmentation — surpassing the TransAttUNet baseline (89.03%) across all metrics.
+HTAN integrates Manifold-Constrained Hyper-Connections (mHC) into the TransAttUNet bottleneck, achieving **90.32% Dice** on ISIC-2018 skin lesion segmentation — surpassing the TransAttUNet baseline (89.03%) across all metrics.
 
 ---
 
 ## For MediLink Team
 
-You only need 2 files: `inference.py` and `htan_tool.py`
+> You only need `inference.py` and `htan_tool.py` from this repo.
 
-1. Clone the repo
-2. Install dependencies:
-```bash
-pip install torch torchvision scipy opencv-python langchain-core langgraph pydantic
-```
-3. Get `best_model.pth` from MK and place it at:
-```
-saves/htan_1_n2/best_model.pth
-```
-4. In your LangGraph agent add:
-```python
-from htan_tool import htan_segmentation_tool
-tools = [..., htan_segmentation_tool]
-```
-
----
-
-## Results (ISIC-2018)
-
-| Model | Dice | IoU | ACC | REC | PRE |
-|---|---|---|---|---|---|
-| TransAttUNet_R* | 89.03 | 80.94 | 95.62 | 87.59 | 91.84 |
-| **HTAN_1_n2 (Ours)** | **90.22** | **82.75** | **96.06** | **88.93** | **92.65** |
-
-*Results marked with \* are reproduced using our experimental setup (seed 123, 2074/520 split).*
-
----
-
-## Architecture
-
-HTAN extends TransAttUNet by replacing the bottleneck with a **Manifold-Constrained Hyper-Connection (mHC)** module that:
-- Expands the residual stream into n parallel streams
-- Applies the SAA (Self-Aware Attention) module across streams
-- Constrains the residual mixing matrix to the Birkhoff polytope via Sinkhorn-Knopp
-- Aggregates streams back to the original channel dimension
-
-```
-Input → Encoder → [mHC Bottleneck] → Decoder → Output Mask
-                        ↑
-              SAA wrapped in mHC (n=2 streams)
-```
-
----
-
-## Setup
-
+**1. Clone and install**
 ```bash
 git clone https://github.com/MohamedKhalidmk/HTAN.git
 cd HTAN
-pip install torch torchvision Pillow requests numpy matplotlib scipy opencv-python
-pip install langchain-core langgraph pydantic
+pip install torch torchvision scipy opencv-python langchain-core langgraph pydantic huggingface_hub
+```
+
+**2. Create package init files**
+```bash
 touch configs/__init__.py datasets/__init__.py models/__init__.py \
       models/transattunet/__init__.py models/htan/__init__.py \
       models/baselines/__init__.py utils/__init__.py
 ```
 
----
+**3. Download model weights**
 
-## Inference
-
-### Basic usage
-
-```python
-from inference import segment
-
-result = segment(image_path="your_image.jpg")
-print(result["tumor_detected"])        # True/False
-print(result["tumor_area_percent"])    # e.g. 12.5
-print(result["severity_estimate"])     # mild/moderate/severe/critical
-print(result["lesion_location"])       # e.g. "center", "upper-left"
+The best model (HTAN_2_n2, 90.32% Dice) is hosted on Hugging Face. Run once to download:
+```bash
+python3 -c "
+from huggingface_hub import hf_hub_download
+import os
+os.makedirs('saves/htan_2_n2', exist_ok=True)
+hf_hub_download(repo_id='mohamedkhaledmk7/HTAN', filename='htan_2_n2/best_model.pth', local_dir='.')
+print('Done.')
+"
 ```
 
-### CLI
-
+**4. Test inference**
 ```bash
 python3 inference.py --image your_image.jpg
 ```
 
-### Output structure
+Output:
+```
+Tumor detected:     True
+Confidence:         91.23%
+Area:               12.50% (2.30 cm²)
+Num lesions:        1
+Largest diameter:   8.30 mm
+Location:           center
+Severity estimate:  moderate
+```
 
+**5. Add to your LangGraph agent**
+```python
+from htan_tool import htan_segmentation_tool
+
+tools = [...your_existing_tools..., htan_segmentation_tool]
+```
+
+Claude receives structured JSON from every image analysis:
 ```json
 {
   "tumor_detected": true,
@@ -99,55 +70,64 @@ python3 inference.py --image your_image.jpg
   "num_lesions": 1,
   "largest_lesion_diameter_mm": 8.3,
   "lesion_location": "center",
-  "severity_estimate": "moderate",
-  "lesion_details": [...]
+  "severity_estimate": "moderate"
 }
 ```
 
+> **Notes:** GPU recommended. Images auto-resized to 256×256. Model loads once and caches. Update `pixel_spacing_mm` with DICOM metadata for accurate physical measurements.
+
 ---
 
-## LangGraph Integration (MediLink)
+## Results (ISIC-2018)
 
-```python
-from htan_tool import htan_segmentation_tool, build_medilink_agent
-from langchain_anthropic import ChatAnthropic
+Trained and evaluated on ISIC-2018 Task 1 (skin lesion segmentation) — 2594 dermoscopy images split into 2074 train / 520 val (seed 123). Images resized to 256×256. Augmentation: random affine, horizontal/vertical flip, color jitter.
 
-llm   = ChatAnthropic(model="claude-sonnet-4-20250514")
-agent = build_medilink_agent(llm)
+| Model | Dice | IoU | ACC | REC | PRE |
+|---|---|---|---|---|---|
+| TransAttUNet_R* | 89.03 | 80.94 | 95.62 | 87.59 | 91.84 |
+| HTAN_1_n2 (Ours) | 90.22 | 82.75 | 96.06 | 88.93 | 92.65 |
+| **HTAN_2_n2 (Ours)** | **90.32** | **82.93** | **96.02** | **89.76** | **92.00** |
 
-response = agent.invoke({
-    "messages": [{"role": "user", "content": "Analyze this image: /path/to/image.jpg"}]
-})
+*\* Reproduced using our experimental setup.*
+
+---
+
+## Architecture
+
+HTAN wraps the TransAttUNet bottleneck with a Manifold-Constrained Hyper-Connection (mHC) module:
+
+```
+Input → Encoder → [mHC Bottleneck] → Decoder → Output Mask
+                        ↑
+             SAA inside n parallel residual streams
+             constrained to Birkhoff polytope via Sinkhorn-Knopp
 ```
 
-The tool returns structured segmentation data that Claude uses to generate clinical summaries.
+The mHC module expands the bottleneck into n parallel residual streams, applies the Self-Aware Attention (TSA + GSA) module across them, and aggregates back — enabling richer feature mixing without breaking the identity mapping property.
 
 ---
 
 ## Training
 
 ```bash
-# TransAttUNet baseline
+# Baseline
 python3 train.py --model transattunet --dataset isic
 
 # HTAN variants
-python3 train.py --model htan_1_n2 --dataset isic   # 1 mHC block, n=2 (best)
-python3 train.py --model htan_1_n4 --dataset isic   # 1 mHC block, n=4
-python3 train.py --model htan_2_n2 --dataset isic   # 2 mHC blocks, n=2
-python3 train.py --model htan_2_n4 --dataset isic   # 2 mHC blocks, n=4
+python3 train.py --model htan_2_n2 --dataset isic   # best
+python3 train.py --model htan_1_n2 --dataset isic
+python3 train.py --model htan_1_n4 --dataset isic
+python3 train.py --model htan_1_hres_only --dataset isic  # ablation
 
 # Baselines
 python3 train.py --model unet       --dataset isic
 python3 train.py --model doubleunet --dataset isic
-```
 
-Training resumes automatically from the last checkpoint if interrupted.
-
-```bash
 # Evaluate
-python3 evaluate.py --model htan_1_n2 --dataset isic
-python3 evaluate.py --model all       --dataset isic
+python3 evaluate.py --model all --dataset isic
 ```
+
+Training resumes automatically if interrupted.
 
 ---
 
@@ -155,46 +135,43 @@ python3 evaluate.py --model all       --dataset isic
 
 ```
 HTAN/
-├── configs/          # Training configs per model
-├── datasets/         # Dataset loaders (ISIC-2018 + 4 others)
+├── configs/              # Per-model training configs
+├── datasets/             # ISIC-2018 + 4 other dataset loaders
 ├── models/
-│   ├── transattunet/ # Paper-faithful TransAttUNet_R
-│   ├── htan/         # HTAN variants + mHC module
-│   └── baselines/    # U-Net, DoubleU-Net
-├── utils/            # Metrics, losses, trainer
-├── notebooks/        # Results notebook
-├── inference.py      # Standalone inference script
-├── htan_tool.py      # LangGraph tool wrapper
-├── train.py          # Training CLI
-└── evaluate.py       # Evaluation CLI
+│   ├── transattunet/     # Paper-faithful TransAttUNet_R
+│   ├── htan/             # HTAN variants + mHC module
+│   └── baselines/        # U-Net, DoubleU-Net
+├── utils/                # Metrics, losses, trainer
+├── notebooks/            # Results and visualizations
+├── inference.py          # Standalone inference
+├── htan_tool.py          # LangGraph tool
+├── train.py              # Training CLI
+└── evaluate.py           # Evaluation CLI
 ```
 
 ---
 
 ## Contributing
 
-1. Create a new branch: `git checkout -b your-feature`
-2. Make changes and push: `git push origin your-feature`
-3. Open a Pull Request for review
-
-Direct pushes to `main` are not allowed.
+```bash
+git checkout -b your-feature
+git push origin your-feature
+# Open a Pull Request — direct pushes to main are not allowed
+```
 
 ---
 
 ## Citation
 
-```
+```bibtex
 @article{htan2025,
-  title={HTAN: Hyper TransAttUNet with Manifold-Constrained Hyper-Connections 
-         for Medical Image Segmentation},
-  author={Mohamed Khalid},
-  year={2025}
+  title   = {HTAN: Hyper TransAttUNet with Manifold-Constrained Hyper-Connections for Medical Image Segmentation},
+  author  = {Mohamed Khalid},
+  year    = {2025}
 }
 ```
 
----
-
 ## References
 
-- TransAttUNet: Chen et al., IEEE T&M 2022
-- mHC: Xie et al., DeepSeek-AI, arXiv:2512.24880
+- TransAttUNet — Chen et al., IEEE T&M 2022
+- mHC — Xie et al., DeepSeek-AI, arXiv:2512.24880
