@@ -80,7 +80,7 @@ def get_config(model_name, dataset_name):
 def get_val_loader(dataset_name, config):
     if dataset_name == "isic":
         from datasets.isic_dataset import get_loaders
-        _, val_loader = get_loaders(
+        _, val_loader, _ = get_loaders(
             img_size=config["IMG_SIZE"],
             batch_size=config["BATCH_SIZE"],
             seed=config["SEED"],
@@ -89,7 +89,7 @@ def get_val_loader(dataset_name, config):
         return val_loader
     elif dataset_name == "glas":
         from datasets.glas_dataset import get_loaders
-        _, val_loader = get_loaders(
+        _, val_loader, _ = get_loaders(
             img_size=config["IMG_SIZE"],
             batch_size=config["BATCH_SIZE"],
             num_workers=config["NUM_WORKERS"],
@@ -97,7 +97,7 @@ def get_val_loader(dataset_name, config):
         return val_loader
     elif dataset_name == "covid":
         from datasets.covid_dataset import get_loaders
-        _, val_loader = get_loaders(
+        _, val_loader, _ = get_loaders(
             img_size=config["IMG_SIZE"],
             batch_size=config["BATCH_SIZE"],
             seed=config["SEED"],
@@ -106,7 +106,7 @@ def get_val_loader(dataset_name, config):
         return val_loader
     elif dataset_name == "lung":
         from datasets.lung_dataset import get_loaders
-        _, val_loader = get_loaders(
+        _, val_loader, _ = get_loaders(
             img_size=config["IMG_SIZE"],
             batch_size=config["BATCH_SIZE"],
             seed=config["SEED"],
@@ -115,7 +115,7 @@ def get_val_loader(dataset_name, config):
         return val_loader
     elif dataset_name == "bowl":
         from datasets.bowl_dataset import get_loaders
-        _, val_loader = get_loaders(
+        _, val_loader, _ = get_loaders(
             img_size=config["IMG_SIZE"],
             batch_size=config["BATCH_SIZE"],
             seed=config["SEED"],
