@@ -102,7 +102,7 @@ class SAA_Module(nn.Module):
 
         if current_epoch is not None:
             warmup_epochs = 20
-            lambd = 1.0
+            lambd = current_epoch / max(1,warmup_epochs)
         else:
             lambd = 1.0
 
