@@ -1,0 +1,7 @@
+test/
+train/
+saves/
+*.zip
+*.pth
+__pycache__/
+*.pyc
